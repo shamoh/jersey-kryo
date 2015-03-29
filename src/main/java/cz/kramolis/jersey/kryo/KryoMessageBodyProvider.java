@@ -18,35 +18,57 @@ import javax.ws.rs.ext.MessageBodyWriter;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.pool.KryoCallback;
+import com.esotericsoftware.kryo.pool.KryoFactory;
+import com.esotericsoftware.kryo.pool.KryoPool;
 
 @Consumes("application/x-kryo")
 @Produces("application/x-kryo")
 public class KryoMessageBodyProvider implements MessageBodyWriter<Object>, MessageBodyReader<Object> {
+
+    private final KryoPool kryoPool;
+
+    public KryoMessageBodyProvider() {
+        final KryoFactory kryoFactory = new KryoFactory() {
+            public Kryo create() {
+                final Kryo kryo = new Kryo();
+                // configure kryo instance, customize settings
+                return kryo;
+            }
+        };
+        kryoPool = new KryoPool.Builder(kryoFactory).softReferences().build();
+    }
 
     //
     // MessageBodyWriter
     //
 
     @Override
-    public long getSize(Object object, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+    public long getSize(final Object object, final Class<?> type, final Type genericType,
+                        final Annotation[] annotations, final MediaType mediaType) {
         return -1;
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+    public boolean isWriteable(final Class<?> type, final Type genericType,
+                               final Annotation[] annotations, final MediaType mediaType) {
         return true;
     }
 
     @Override
-    public void writeTo(Object object, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-                        MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+    public void writeTo(final Object object, final Class<?> type, final Type genericType,
+                        final Annotation[] annotations, final MediaType mediaType,
+                        final MultivaluedMap<String, Object> httpHeaders, final OutputStream entityStream)
             throws IOException, WebApplicationException {
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        final Kryo kryo = new Kryo();
         final Output output = new Output(baos);
-
-        kryo.writeObject(output, object);
+        kryoPool.run(new KryoCallback() {
+            public Object execute(Kryo kryo) {
+                kryo.writeObject(output, object);
+                return null;
+            }
+        });
         output.close();
 
         entityStream.write(baos.toByteArray());
@@ -57,19 +79,23 @@ public class KryoMessageBodyProvider implements MessageBodyWriter<Object>, Messa
     //
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+    public boolean isReadable(final Class<?> type, final Type genericType,
+                              final Annotation[] annotations, final MediaType mediaType) {
         return true;
     }
 
     @Override
-    public Object readFrom(Class<Object> type, Type genericType,
-                           Annotation[] annotations, MediaType mediaType,
-                           MultivaluedMap<String, String> httpHeaders,
-                           InputStream entityStream) throws IOException, WebApplicationException {
+    public Object readFrom(final Class<Object> type, final Type genericType,
+                           final Annotation[] annotations, final MediaType mediaType,
+                           final MultivaluedMap<String, String> httpHeaders,
+                           final InputStream entityStream) throws IOException, WebApplicationException {
         try {
-            Kryo kryo = new Kryo();
-            Input input = new Input(entityStream);
-            Object object = kryo.readObject(input, type);
+            final Input input = new Input(entityStream);
+            final Object object = kryoPool.run(new KryoCallback() {
+                public Object execute(Kryo kryo) {
+                    return kryo.readObject(input, type);
+                }
+            });
             input.close();
 
             return object;

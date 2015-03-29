@@ -9,12 +9,12 @@
     <packaging>jar</packaging>
     <version>0.0.7-SNAPSHOT</version>
 
-    <name>Jersey/JAX-RS Message Body Writer&amp;Reader using Kryo serialization framework</name>
+    <name>Jersey/JAX-RS Message Body Writer &amp; Reader using Kryo serialization framework</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jaxrs.version>2.0.1</jaxrs.version>
-        <jersey.version>2.16</jersey.version>
+        <jersey.version>2.17</jersey.version>
     </properties>
 
     <dependencies>
