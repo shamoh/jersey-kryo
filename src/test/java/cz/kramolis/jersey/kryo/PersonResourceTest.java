@@ -4,7 +4,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Response;
 
-import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.test.JerseyTest;
 import org.glassfish.jersey.test.TestProperties;
 
@@ -18,11 +17,6 @@ public class PersonResourceTest extends JerseyTest {
         enable(TestProperties.LOG_TRAFFIC);
         enable(TestProperties.DUMP_ENTITY);
         return new JaxRsApplication();
-    }
-
-    @Override
-    protected void configureClient(final ClientConfig config) {
-        config.register(KryoMessageBodyProvider.class);
     }
 
     @Test

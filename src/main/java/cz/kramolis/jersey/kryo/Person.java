@@ -2,6 +2,9 @@ package cz.kramolis.jersey.kryo;
 
 import java.util.Objects;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement
 public class Person {
 
     public String name;
